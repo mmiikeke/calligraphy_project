@@ -3,71 +3,123 @@ from selenium.webdriver.chrome.options import Options
 import time
 import requests
 from bs4 import BeautifulSoup
-
 import urllib
+
+import os
 import pandas as pd
 
-def Get_links():
-    chrome.get('https://tm.ncl.edu.tw/overview_index?lang=chn&collection=C_TWrubbing&page=1&page_limit=100')
-    result_items = list()
+from utils.tools import download_img, save_csv 
 
-    while len(result_items) == 0:
-        soup = BeautifulSoup(chrome.page_source, 'html.parser')
-        result_items = soup.find_all('div', class_='result_item-list', limit=1)
-        time.sleep(1)
+def Get_item_links():
+    item_links = list()
 
-    links = list()
-    for result_item in result_items:
-        children = result_item.find_all('a', href=True, recursive=False)
-        if len(children) != 1:
-            raise ValueError(f'Error: find link, but there are {len(children)} links.')
+    # 21 pages
+    for i in range(21):
+        chrome.get(f'https://tm.ncl.edu.tw/overview_index?lang=chn&collection=C_TWrubbing&page={i+1}&page_limit=100')
 
-        links.append(urllib.parse.urljoin(base, children[0].get('href')))
+        result_items = list()
+        while len(result_items) == 0:
+            soup = BeautifulSoup(chrome.page_source, 'html.parser')
+            result_items = soup.find_all('div', class_='result_item-list', limit=200)
+            time.sleep(0.2)
+        
+        for result_item in result_items:
+            children = result_item.find_all('a', href=True, recursive=False)
+            if len(children) != 1:
+                raise ValueError(f'Error: find link, but there are {len(children)} links.')
+
+            item_links.append(urllib.parse.urljoin(base, children[0].get('href')))
     
-    return links
+    return item_links
 
-def Get_datas(links):
-    for link in links:
+def Get_image(soup, link_index):
+    image_item = soup.find_all('div', class_='popup-gallery')
+    if len(image_item) == 0:
+        print(f'Error: find image item, but there are {len(image_item)} image items.')
+        return None
+    elif len(image_item) > 1:
+        raise ValueError(f'Error: find image item, but there are {len(image_item)} image items.')
+
+    image_item = image_item[0].find_all('a', href=True, recursive=False)
+    if len(image_item) == 0:
+        print(f'Error: find image item, but there are {len(image_item)} image items.')
+        return None
+    elif len(image_item) > 1:
+        raise ValueError(f'Error: find image item, but there are {len(image_item)} image items.')
+
+    image_link = urllib.parse.urljoin(base, image_item[0].get('href'))
+    download_img(image_link, os.path.join(image_savepath, str(link_index)+'.jpg'))
+
+    return image_link
+
+def Get_item_datas(links, start = 0):
+    item_datas = list()
+
+    for link_index, link in enumerate(links):
+        print(f'Get page: {link_index}/{len(links)}.')
+
         response = requests.get(link)
         soup = BeautifulSoup(response.text, 'html.parser')
         #print(soup.prettify())
 
-        #Get data
         result_items = soup.find_all('div', class_='detail_list')
 
+        locations = list()
+
+        # Get Title
         for index, result_item in enumerate(result_items):
-            title = result_item.find_all('div', class_='detail-th', recursive=False)
-            if len(title) != 1:
-                raise ValueError(f'Error: find title, but there are {len(title)} titles.')
-            title = title[0].getText()
+            th = result_item.find_all('div', class_='detail-th', recursive=False)
+            if len(th) != 1:
+                raise ValueError(f'Error: find title, but there are {len(th)} titles.')
+            th = th[0].getText()
 
-            data = result_item.find_all('div', class_='detail-td', recursive=False)
-            if len(data) != 1:
-                raise ValueError(f'Error: find data, but there are {len(data)} datas.')
-            data = data[0].getText()
+            if th in Titles:
+                locations.append(Titles.index(th))
+            else:
+                Titles.append(th)
+                locations.append(len(Titles)-1)
+                print(f'Find new title: |{th}|, total len = {len(Titles)}.')
+        time.sleep(0.1)
 
-            print(f'{index} {title} \t {data}')
+        # Get Data
+        data = [None] * len(Titles)
+        for index, result_item in enumerate(result_items):     
+            td = result_item.find_all('div', class_='detail-td', recursive=False)
+            if len(td) != 1:
+                raise ValueError(f'Error: find data, but there are {len(td)} datas.')
+            td = td[0].getText()
 
-            if title in Titles:
-                location = Titles.index(title)
-                
-            #df = pd.DataFrame()
+            data[locations[index]] = td
+        time.sleep(0.1)
+
+        # Get image
+        image_link = Get_image(soup, link_index)
+        time.sleep(0.1)
+
+        # Fill other field
+        data[0] = link_index
+        data[4] = link
+        data[5] = image_link
+
+        # Final append
+        item_datas.append(data)
+
+
+    return item_datas
 
 if __name__ == '__main__':
     options = Options()
     options.add_argument('--disable-notifications')
 
     base = 'https://tm.ncl.edu.tw'
+    image_savepath = os.path.realpath('data/images')
+    csv_savepath = os.path.realpath('data/data.csv')
 
     chrome = webdriver.Chrome('./chromedriver', chrome_options=options)
     
-    Titles = ['index', '碑揭名稱', '碑揭類別', '碑揭原文', 'item_link', 'image_link']
+    Titles = ['index', '碑碣名稱', '碑碣類別', '碑碣原文', 'item_link', 'image_link']
 
-    links = Get_links()
-    Get_datas(links)
-    
-
-
-
-    #print(result_items)
-    #print(soup.prettify())
+    links = Get_item_links()
+    datas = Get_item_datas(links)
+    df = pd.DataFrame(datas)
+    save_csv(df, csv_savepath, header=Titles)
