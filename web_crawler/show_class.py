@@ -1,9 +1,9 @@
-import os
+from pathlib import Path
 import pandas as pd
 
 if __name__ == '__main__':
-    filepath = os.path.realpath('data/data_去除無用資訊.csv')
-    df = pd.read_csv(filepath, header=None, low_memory=False)
+    filepath = Path('../data/data_去除無用資訊.csv').resolve()
+    df = pd.read_csv(str(filepath), header=None, low_memory=False)
     series = df.loc[:,10]
     #b = series.sort_values(ascending=True)
     obj = list()

@@ -1,3 +1,7 @@
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path('..').resolve()))
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
@@ -5,9 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 import urllib
 
-import os
 import pandas as pd
-
 from utils.tools import download_img, save_csv 
 
 def Get_item_links():
@@ -48,7 +50,8 @@ def Get_image(soup, link_index):
         raise ValueError(f'Error: find image item, but there are {len(image_item)} image items.')
 
     image_link = urllib.parse.urljoin(base, image_item[0].get('href'))
-    download_img(image_link, os.path.join(image_savepath, str(link_index)+'.jpg'))
+
+    download_img(image_link, str(image_savedir / f'{link_index}.jpg'))
 
     return image_link
 
@@ -56,7 +59,7 @@ def Get_item_datas(links, start = 0):
     item_datas = list()
 
     for link_index, link in enumerate(links):
-        print(f'Get page: {link_index}/{len(links)}.')
+        print(f'Get page: {link_index}/{len(links)-1}.')
 
         response = requests.get(link)
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -112,8 +115,11 @@ if __name__ == '__main__':
     options.add_argument('--disable-notifications')
 
     base = 'https://tm.ncl.edu.tw'
-    image_savepath = os.path.realpath('data/images')
-    csv_savepath = os.path.realpath('data/data.csv')
+    image_savedir = Path('../data/images').resolve()
+    csv_savepath = Path('../data/data.csv').resolve()
+
+    image_savedir.mkdir(parents=True, exist_ok=True)
+    csv_savepath.parent.mkdir(parents=True, exist_ok=True)
 
     chrome = webdriver.Chrome('./chromedriver', chrome_options=options)
     
@@ -122,4 +128,4 @@ if __name__ == '__main__':
     links = Get_item_links()
     datas = Get_item_datas(links)
     df = pd.DataFrame(datas)
-    save_csv(df, csv_savepath, header=Titles)
+    save_csv(df, str(csv_savepath), header=Titles)
