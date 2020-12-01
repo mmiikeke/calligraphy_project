@@ -5,7 +5,6 @@ conda activate myenv
 ```
 
 ## Download the data
-Download to web_crawler/data.
 ```
 cd web_crawler
 python main.py
