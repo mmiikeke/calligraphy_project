@@ -115,8 +115,8 @@ if __name__ == '__main__':
     options.add_argument('--disable-notifications')
 
     base = 'https://tm.ncl.edu.tw'
-    image_savedir = Path('../data/images').resolve()
-    csv_savepath = Path('../data/data.csv').resolve()
+    image_savedir = Path('../../../data/part2/images').resolve()
+    csv_savepath = Path('../../../data/part2/data.csv').resolve()
 
     image_savedir.mkdir(parents=True, exist_ok=True)
     csv_savepath.parent.mkdir(parents=True, exist_ok=True)

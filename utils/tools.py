@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import requests
 
-def download_img(link, savepath, warning = True):
+def download_img(link, savepath, warning = True, show_info=True):
     dirpath = os.path.dirname(savepath)
 
     if not os.path.isdir(dirpath):
@@ -13,12 +13,13 @@ def download_img(link, savepath, warning = True):
 
     img = requests.get(link)
 
-    print('Save file: ' + savepath)
+    if show_info:
+        print('Save file: ' + savepath)
 
     with open(savepath, "wb") as file:
         file.write(img.content)
 
-def save_csv(df, savepath, index = False, header = False, warning = True):
+def save_csv(df, savepath, index = False, header = False, warning = True, show_info=True):
     dirpath = os.path.dirname(savepath)
 
     if not os.path.isdir(dirpath):
@@ -27,5 +28,6 @@ def save_csv(df, savepath, index = False, header = False, warning = True):
     if os.path.isfile(savepath):
         print('Warning: Csv file already exists! ' + savepath)
 
-    print('Save file: ' + savepath)
+    if show_info:
+        print('Save file: ' + savepath)
     df.to_csv(savepath, index=index, header=header)
