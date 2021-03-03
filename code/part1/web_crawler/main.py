@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 import urllib
 
 import pandas as pd
-from utils.tools import download_img, save_csv 
+from utils.tools import download_img, save_csv, save_xlsx 
 
 def Get_font_links():
     font_links = list()
@@ -71,6 +71,7 @@ def Get_font_data(cid, csvdir, imagedir):
 
     df = pd.DataFrame(font_datas)
     save_csv(df, str(csvdir/'data.csv'), header=Titles)
+    save_xlsx(df, str(csvdir/'data.xlsx'), header=Titles)
 
 if __name__ == '__main__':
     base = 'http://163.20.160.14/~word/modules/myalbum/index.php'
