@@ -62,11 +62,12 @@ def Get_font_data(cid, csvdir, imagedir):
             # Final append
             font_datas.append(data)
             counter += 1
+            if counter % 50 == 0:
+                time.sleep(1)
 
         if flag == False:
             break
         link = new_link
-        time.sleep(1)
         print(counter)
 
     df = pd.DataFrame(font_datas)
