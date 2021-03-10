@@ -129,4 +129,6 @@ dmypy.json
 .pyre/
 
 # My data
-/data
+data
+dataset
+output
