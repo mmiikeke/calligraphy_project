@@ -30,6 +30,7 @@ parser.add_argument('--input_nc', type=int, default=1, help='number of channels 
 parser.add_argument('--output_nc', type=int, default=1, help='number of channels of output data')
 parser.add_argument('--cuda', action='store_true', help='use GPU computation')
 parser.add_argument('--n_cpu', type=int, default=8, help='number of cpu threads to use during batch generation')
+parser.add_argument('--dense', action='store_true', help='use dense block in generaator')
 opt = parser.parse_args()
 print(opt)
 
@@ -39,8 +40,8 @@ if __name__ == '__main__':
 
     ###### Definition of variables ######
     # Networks
-    netG_A2B = Generator(opt.input_nc, opt.output_nc)
-    netG_B2A = Generator(opt.output_nc, opt.input_nc)
+    netG_A2B = Generator(opt.input_nc, opt.output_nc, use_densenet=opt.dense)
+    netG_B2A = Generator(opt.output_nc, opt.input_nc, use_densenet=opt.dense)
     netD_A = Discriminator(opt.input_nc)
     netD_B = Discriminator(opt.output_nc)
 
@@ -68,7 +69,7 @@ if __name__ == '__main__':
     criterion_GAN = torch.nn.MSELoss()
     criterion_cycle = torch.nn.L1Loss()
     criterion_identity = torch.nn.L1Loss()
-
+    
     # Optimizers & LR schedulers
     optimizer_G = torch.optim.Adam(itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()),
                                     lr=opt.lr, betas=(0.5, 0.999))
@@ -125,7 +126,10 @@ if __name__ == '__main__':
             # loss_identity_A = criterion_identity(same_A, real_A)*5.0
 
             # GAN loss
+            #6 1 128 128
+            print(f'realA shape = {real_A.size()}')
             fake_B = netG_A2B(real_A)
+            print(f'fake_B shape = {fake_B.size()}')
             pred_fake = netD_B(fake_B)
             loss_GAN_A2B = criterion_GAN(pred_fake, target_real) # generator让pred_fake接近1
 
