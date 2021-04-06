@@ -23,6 +23,7 @@ parser.add_argument('--cuda', action='store_true', help='use GPU computation')
 parser.add_argument('--n_cpu', type=int, default=8, help='number of cpu threads to use during batch generation')
 parser.add_argument('--generator_A2B', type=str, default='output/199_netG_A2B.pth', help='A2B generator checkpoint file')
 parser.add_argument('--generator_B2A', type=str, default='output/199_netG_B2A.pth', help='B2A generator checkpoint file')
+parser.add_argument('--dense', action='store_true', help='use dense block in generaator')
 opt = parser.parse_args()
 print(opt)
 
@@ -32,8 +33,8 @@ if __name__ == '__main__':
 
     ###### Definition of variables ######
     # Networks
-    netG_A2B = Generator(opt.input_nc, opt.output_nc)
-    netG_B2A = Generator(opt.output_nc, opt.input_nc)
+    netG_A2B = Generator(opt.input_nc, opt.output_nc, use_densenet=opt.dense)
+    netG_B2A = Generator(opt.output_nc, opt.input_nc, use_densenet=opt.dense)
 
     if opt.cuda:
         netG_A2B.cuda() #netG_A2B.to(torch.device('cuda')) new
