@@ -131,5 +131,4 @@ dmypy.json
 # My data
 data
 dataset
-output
-output_resnet
+output*
