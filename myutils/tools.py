@@ -2,6 +2,18 @@ import os
 import pandas as pd
 import requests
 
+def get_files_path(root_path, end_string, interrupt = True):
+    filepath_list = list()
+    for root, dirs, files in os.walk(root_path):
+        for file in files:
+            if file.endswith(end_string):
+                filepath_list.append(os.path.join(root, file))
+    
+    if (interrupt and len(filepath_list) == 0):
+        raise ValueError('Error: Can\'t find any ' + end_string + ' file in ' + root_path)
+
+    return filepath_list
+
 def download_img(link, savepath, warning = True, show_info=True):
     dirpath = os.path.dirname(savepath)
 

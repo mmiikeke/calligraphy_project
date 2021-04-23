@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from pathlib import Path
+import os
 import argparse
 import itertools
 import matplotlib.pyplot as plt
@@ -32,7 +32,7 @@ parser.add_argument('--output_nc', type=int, default=1, help='number of channels
 parser.add_argument('--cuda', action='store_true', help='use GPU computation')
 parser.add_argument('--n_cpu', type=int, default=8, help='number of cpu threads to use during batch generation')
 parser.add_argument('--dense', action='store_true', help='use dense block in generaator')
-parser.add_argument('--outpath', type=str, default='output', help='output directory')
+parser.add_argument('--outpath', type=str, default='output/', help='output directory')
 opt = parser.parse_args()
 print(opt)
 
@@ -41,8 +41,8 @@ if __name__ == '__main__':
         print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
     outputpath = opt.outpath
-    if not Path(outputpath).is_dir():
-        Path(outputpath).mkdir(parents=True)  
+    if not os.path.isdir(outputpath):
+            os.makedirs(outputpath)
 
     ###### Definition of variables ######
     # Networks
@@ -61,15 +61,11 @@ if __name__ == '__main__':
         #netD_B.cuda()
         netD_B.to(torch.device('cuda'))
 
-        netG_A2B = nn.DataParallel(netG_A2B, device_ids=[0, 1])
-        netG_B2A = nn.DataParallel(netG_B2A, device_ids=[0, 1])
-        netD_A = nn.DataParallel(netD_A, device_ids=[0, 1])
-        netD_B = nn.DataParallel(netD_B, device_ids=[0, 1])
 
-    netG_A2B.apply(weights_init_normal)
-    netG_B2A.apply(weights_init_normal)
-    netD_A.apply(weights_init_normal)
-    netD_B.apply(weights_init_normal)
+    netG_A2B.load_state_dict({k.replace('module.',''):v for k,v in torch.load('output/199_netG_A2B.pth').items()})
+    netG_B2A.load_state_dict({k.replace('module.',''):v for k,v in torch.load('output/199_netG_B2A.pth').items()})
+    netD_A.load_state_dict({k.replace('module.',''):v for k,v in torch.load('output/199_netD_A.pth').items()})
+    netD_B.load_state_dict({k.replace('module.',''):v for k,v in torch.load('output/199_netD_B.pth').items()})
 
     # Lossess
     criterion_GAN = torch.nn.MSELoss()
@@ -114,11 +110,6 @@ if __name__ == '__main__':
     ###################################
 
     ###### Training ######
-    loss_g_cycle = list()
-    loss_g_gan = list()
-    loss_g = list()
-    loss_d = list()
-    epoch_list = list()
     for epoch in range(opt.epoch, opt.n_epochs):
         for i, batch in enumerate(dataloader):
             # Set model input
@@ -159,13 +150,6 @@ if __name__ == '__main__':
             loss_G = loss_GAN_A2B + loss_GAN_B2A + loss_cycle_ABA + loss_cycle_BAB
             #loss_G = loss_identity_A + loss_identity_B + loss_GAN_A2B + loss_GAN_B2A + loss_cycle_ABA + loss_cycle_BAB
 
-
-            loss_G.backward(retain_graph=True)
-            optimizer_G.step()
-
-            loss_G.backward()
-            optimizer_G.step()
-
             ###################################
 
             ###### Discriminator A ######
@@ -182,9 +166,6 @@ if __name__ == '__main__':
 
             # Total loss
             loss_D_A = (loss_D_real + loss_D_fake)*0.5
-            loss_D_A.backward()
-
-            optimizer_D_A.step()
             ###################################
 
             ###### Discriminator B ######
@@ -201,76 +182,15 @@ if __name__ == '__main__':
 
             # Total loss
             loss_D_B = (loss_D_real + loss_D_fake)*0.5
-            loss_D_B.backward()
-
-            optimizer_D_B.step()
             ###################################
 
             # Progress report (http://localhost:8097)
             logger.log({'loss_G': loss_G, 'loss_G_GAN': (loss_GAN_A2B + loss_GAN_B2A),
                         'loss_G_cycle': (loss_cycle_ABA + loss_cycle_BAB), 'loss_D': (loss_D_A + loss_D_B)},
                         images={'real_A': real_A, 'real_B': real_B, 'fake_A': fake_A, 'fake_B': fake_B})
-
+            break
             # logger.log({'loss_G': loss_G, 'loss_G_identity': (loss_identity_A + loss_identity_B), 'loss_G_GAN': (loss_GAN_A2B + loss_GAN_B2A),
             #             'loss_G_cycle': (loss_cycle_ABA + loss_cycle_BAB), 'loss_D': (loss_D_A + loss_D_B)},
             #             images={'real_A': real_A, 'real_B': real_B, 'fake_A': fake_A, 'fake_B': fake_B})
-
-        loss_g_cycle.append(loss_cycle_ABA + loss_cycle_BAB)
-        loss_g_gan.append(loss_GAN_A2B + loss_GAN_B2A)
-        loss_g.append(loss_G)
-        loss_d.append(loss_D_A + loss_D_B)
-        epoch_list.append(epoch+1)
-
-        # Update learning rates
-        lr_scheduler_G.step()
-        lr_scheduler_D_A.step()
-        lr_scheduler_D_B.step()
-
-        # Save models checkpoints
-        if epoch % 20 == 19:
-
-            torch.save(netG_A2B.state_dict(), f'{outputpath}{epoch}_netG_A2B.pth')
-            torch.save(netG_B2A.state_dict(), f'{outputpath}{epoch}_netG_B2A.pth')
-            torch.save(netD_A.state_dict(), f'{outputpath}{epoch}_netD_A.pth')
-            torch.save(netD_B.state_dict(), f'{outputpath}{epoch}_netD_B.pth')
-
-    fig = plt.figure(figsize=(16, 6))
-    plt.plot(epoch_list, loss_g, linewidth=3, label = 'Train loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss_G')
-    plt.title('Loss_G')
-    plt.grid()
-    plt.legend()
-    print('Save file: ' + 'Loss_G.png')
-    plt.savefig(f'{outputpath}Loss_G.png')
-
-    fig = plt.figure(figsize=(16, 6))
-    plt.plot(epoch_list, loss_d, linewidth=3, label = 'Train loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss_D')
-    plt.title('Loss_D')
-    plt.grid()
-    plt.legend()
-    print('Save file: ' + 'Loss_D.png')
-    plt.savefig(f'{outputpath}Loss_D.png')
-
-    fig = plt.figure(figsize=(16, 6))
-    plt.plot(epoch_list, loss_g_cycle, linewidth=3, label = 'Train loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss_G_Cycle')
-    plt.title('Loss_G_Cycle')
-    plt.grid()
-    plt.legend()
-    print('Save file: ' + 'Loss_G_Cycle.png')
-    plt.savefig(f'{outputpath}loss_g_cycle.png')
-
-    fig = plt.figure(figsize=(16, 6))
-    plt.plot(epoch_list, loss_g_gan, linewidth=3, label = 'Train loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss_G_GAN')
-    plt.title('Loss_G_GAN')
-    plt.grid()
-    plt.legend()
-    print('Save file: ' + 'Loss_G_GAN.png')
-    plt.savefig(f'{outputpath}loss_g_gan.png')
+        break
     ###################################
