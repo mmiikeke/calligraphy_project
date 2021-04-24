@@ -40,9 +40,9 @@ if __name__ == '__main__':
     if torch.cuda.is_available() and not opt.cuda:
         print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-    outputpath = opt.outpath
-    if not Path(outputpath).is_dir():
-        Path(outputpath).mkdir(parents=True)  
+    outputpath = Path(opt.outpath)
+    if not outputpath.is_dir():
+        outputpath.mkdir(parents=True)  
 
     ###### Definition of variables ######
     # Networks
@@ -107,7 +107,7 @@ if __name__ == '__main__':
                     transforms.ToTensor(),  # 归一化到[0, 1] 维度转换, 例如[128, 128, 1] --> [1, 128, 128]
                     transforms.Normalize((0.5,), (0.5,)) ] # 将[0, 1]归一化到[-1, 1]  mean, std
     dataloader = DataLoader(ImageDataset(opt.dataroot, transforms_=transforms_, unaligned=True),
-                            batch_size=opt.batchSize, shuffle=True, num_workers=opt.n_cpu)
+                            batch_size=opt.batchSize, shuffle=True, num_workers=opt.n_cpu, drop_last=True)
 
     # Loss plot
     logger = Logger(opt.n_epochs, len(dataloader))
@@ -229,10 +229,10 @@ if __name__ == '__main__':
         # Save models checkpoints
         if epoch % 20 == 19:
 
-            torch.save(netG_A2B.state_dict(), f'{outputpath}{epoch}_netG_A2B.pth')
-            torch.save(netG_B2A.state_dict(), f'{outputpath}{epoch}_netG_B2A.pth')
-            torch.save(netD_A.state_dict(), f'{outputpath}{epoch}_netD_A.pth')
-            torch.save(netD_B.state_dict(), f'{outputpath}{epoch}_netD_B.pth')
+            torch.save(netG_A2B.state_dict(), str(outputpath / f'{epoch}_netG_A2B.pth'))
+            torch.save(netG_B2A.state_dict(), str(outputpath / f'{epoch}_netG_B2A.pth'))
+            torch.save(netD_A.state_dict(), str(outputpath / f'{epoch}_netD_A.pth'))
+            torch.save(netD_B.state_dict(), str(outputpath / f'{epoch}_netD_B.pth'))
 
     fig = plt.figure(figsize=(16, 6))
     plt.plot(epoch_list, loss_g, linewidth=3, label = 'Train loss')
@@ -242,7 +242,7 @@ if __name__ == '__main__':
     plt.grid()
     plt.legend()
     print('Save file: ' + 'Loss_G.png')
-    plt.savefig(f'{outputpath}Loss_G.png')
+    plt.savefig(str(outputpath / 'Loss_G.png'))
 
     fig = plt.figure(figsize=(16, 6))
     plt.plot(epoch_list, loss_d, linewidth=3, label = 'Train loss')
@@ -252,7 +252,7 @@ if __name__ == '__main__':
     plt.grid()
     plt.legend()
     print('Save file: ' + 'Loss_D.png')
-    plt.savefig(f'{outputpath}Loss_D.png')
+    plt.savefig(str(outputpath / 'Loss_D.png'))
 
     fig = plt.figure(figsize=(16, 6))
     plt.plot(epoch_list, loss_g_cycle, linewidth=3, label = 'Train loss')
@@ -262,7 +262,7 @@ if __name__ == '__main__':
     plt.grid()
     plt.legend()
     print('Save file: ' + 'Loss_G_Cycle.png')
-    plt.savefig(f'{outputpath}loss_g_cycle.png')
+    plt.savefig(str(outputpath / 'loss_g_cycle.png'))
 
     fig = plt.figure(figsize=(16, 6))
     plt.plot(epoch_list, loss_g_gan, linewidth=3, label = 'Train loss')
@@ -272,5 +272,5 @@ if __name__ == '__main__':
     plt.grid()
     plt.legend()
     print('Save file: ' + 'Loss_G_GAN.png')
-    plt.savefig(f'{outputpath}loss_g_gan.png')
+    plt.savefig(str(outputpath / 'loss_g_gan.png'))
     ###################################

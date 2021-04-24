@@ -16,9 +16,7 @@ def tensor2image(tensor):
 
 class Logger():
     def __init__(self, n_epochs, batches_epoch):
-        print('cc')
         self.viz = Visdom()
-        print('dd')
         self.n_epochs = n_epochs
         self.batches_epoch = batches_epoch
         self.epoch = 1
@@ -54,10 +52,10 @@ class Logger():
         # Draw images
         for image_name, tensor in images.items():
             if image_name not in self.image_windows:
-                print(f'\n N name = {image_name}')
+                #print(f'\n N name = {image_name}')
                 self.image_windows[image_name] = self.viz.image(tensor2image(tensor.data), opts={'title':image_name})
             else:
-                print(f'\n Y name = {image_name}')
+                #print(f'\n Y name = {image_name}')
                 self.viz.image(tensor2image(tensor.data), win=self.image_windows[image_name], opts={'title':image_name})
 
         # End of epoch
