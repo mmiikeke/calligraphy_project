@@ -34,7 +34,7 @@ parser.add_argument('--n_cpu', type=int, default=8, help='number of cpu threads 
 parser.add_argument('--dense', action='store_true', help='use dense block in generaator')
 parser.add_argument('--outpath', type=str, default='output', help='output directory')
 opt = parser.parse_args()
-print(opt)
+#print(opt)
 
 if __name__ == '__main__':
     if torch.cuda.is_available() and not opt.cuda:
