@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import os
+from pathlib import Path
 import argparse
 import itertools
 import matplotlib.pyplot as plt
@@ -32,17 +32,17 @@ parser.add_argument('--output_nc', type=int, default=1, help='number of channels
 parser.add_argument('--cuda', action='store_true', help='use GPU computation')
 parser.add_argument('--n_cpu', type=int, default=8, help='number of cpu threads to use during batch generation')
 parser.add_argument('--dense', action='store_true', help='use dense block in generaator')
-parser.add_argument('--outpath', type=str, default='output/', help='output directory')
+parser.add_argument('--outpath', type=str, default='output', help='output directory')
 opt = parser.parse_args()
-print(opt)
+#print(opt)
 
 if __name__ == '__main__':
     if torch.cuda.is_available() and not opt.cuda:
         print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-    outputpath = opt.outpath
-    if not os.path.isdir(outputpath):
-            os.makedirs(outputpath)
+    outputpath = Path(opt.outpath)
+    if not outputpath.is_dir():
+        outputpath.mkdir(parents=True) 
 
     ###### Definition of variables ######
     # Networks
@@ -62,10 +62,10 @@ if __name__ == '__main__':
         netD_B.to(torch.device('cuda'))
 
 
-    netG_A2B.load_state_dict({k.replace('module.',''):v for k,v in torch.load('output/199_netG_A2B.pth').items()})
-    netG_B2A.load_state_dict({k.replace('module.',''):v for k,v in torch.load('output/199_netG_B2A.pth').items()})
-    netD_A.load_state_dict({k.replace('module.',''):v for k,v in torch.load('output/199_netD_A.pth').items()})
-    netD_B.load_state_dict({k.replace('module.',''):v for k,v in torch.load('output/199_netD_B.pth').items()})
+    netG_A2B.load_state_dict({k.replace('module.',''):v for k,v in torch.load(str(outputpath / f'199_netG_A2B.pth')).items()})
+    netG_B2A.load_state_dict({k.replace('module.',''):v for k,v in torch.load(str(outputpath / f'199_netG_B2A.pth')).items()})
+    netD_A.load_state_dict({k.replace('module.',''):v for k,v in torch.load(str(outputpath / f'199_netD_A.pth')).items()})
+    netD_B.load_state_dict({k.replace('module.',''):v for k,v in torch.load(str(outputpath / f'199_netD_B.pth')).items()})
 
     # Lossess
     criterion_GAN = torch.nn.MSELoss()

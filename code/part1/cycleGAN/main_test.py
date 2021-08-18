@@ -9,11 +9,11 @@ from PIL import Image
 
 from myutils.tools import get_files_path
 
-model_weight_path = Path('output_resnet_48086817').resolve()
+model_weight_path = Path('result/output_dense_4808_6817_128_pad10_retrain').resolve()
 test = True
-use_dense = False
+use_dense = True
 generate_result_image = True
-data_path = Path('data/4808_6817').resolve()
+data_path = Path('data/4808_6817_128_pad10').resolve()
 total_result_images = 10
 generator_A2B = model_weight_path / '199_netG_A2B.pth'
 generator_B2A = model_weight_path / '199_netG_B2A.pth'
@@ -55,7 +55,7 @@ if generate_result_image:
     print('Generate result image A and B')
     print('============================\n\n')
     path = data_path / 'test' / 'A'
-    path_list = get_files_path(str(path), '.jpg')
+    path_list = get_files_path(str(path), '.png')
     savepath = model_weight_path / 'A.png'
     images = [mpimg.imread(i) for i in path_list]
     save_multiple_img(images, str(savepath), 1, total_result_images)
